@@ -1,36 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:Praktyk!234@localhost:5432/postgres"
-
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base = declarative_base()
-
-class parameterType(Base):
-    __tablename__ = "ParameterType"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50))
-
-    productParameters = relationship("productParameters", back_populates="parameterType")
-
-class productParameters(Base):
-    __tablename__ = "ProductParameters"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50))
-    code = Column(String, unique=True)
-    parentCode = Column(String)
-
-    parameterTypeId = Column(Integer, ForeignKey('ParameterType.id'))
-    parameterType = relationship("parameterType", back_populates="productParameters")
+from DbContext import SessionLocal
+from models import productParameters
 
 app = FastAPI()
 
