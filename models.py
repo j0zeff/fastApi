@@ -22,3 +22,13 @@ class productParameters(Base):
 
     parameterTypeId = Column(Integer, ForeignKey('ParameterType.id'))
     parameterType = relationship("parameterType", back_populates="productParameters")
+
+class tokenModel(Base):
+    __tablename__ = "Tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, nullable=False)
+    appCode = Column(String, nullable=False, index=True)
+
+
+    
