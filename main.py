@@ -1,28 +1,36 @@
 from fastapi import FastAPI, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from DbContext import SessionLocal
-from models import productParameters, tokenModel
+from models import ProductParameters, TokenModel
 
 app = FastAPI()
 
-def getDb():
+
+def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
-async def verifyToken(appCodeClient: str = Header(None), tokenClient: str = Header(None), db: Session = Depends(getDb)):
-    token = db.query(tokenModel).filter(tokenModel.token == tokenClient).first()
-    appCode = db.query(tokenModel).filter(tokenModel.appCode == appCodeClient).first()
-    
+
+async def verify_token(
+    appCodeClient: str = Header(None),
+    tokenClient: str = Header(None),
+    db: Session = Depends(get_db),
+):
+    token = db.query(TokenModel).filter(TokenModel.token == tokenClient).first()
+    appCode = db.query(TokenModel).filter(TokenModel.appCode == appCodeClient).first()
+
     if not appCode or not token:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 @app.get("/get_production_parameter_by_code/{code}")
-async def GetParamByCode(code: str, db: Session = Depends(getDb), token: str = Depends(verifyToken)):
-    param = db.query(productParameters).filter(productParameters.code == code).first()
+async def get_param_by_code(
+    code: str, db: Session = Depends(get_db), token: str = Depends(verify_token)
+):
+    param = db.query(ProductParameters).filter(ProductParameters.code == code).first()
     if param is None:
         raise HTTPException(status_code=404, detail="Parameter not found")
     return {
@@ -30,12 +38,19 @@ async def GetParamByCode(code: str, db: Session = Depends(getDb), token: str = D
         "name": param.name,
         "code": param.code,
         "parentCode": param.parentCode,
-        "parameterTypeId": param.parameterTypeId
+        "parameterTypeId": param.parameterTypeId,
     }
 
+
 @app.get("/get_parameters_by_name")
-async def GetParamsByName(name: str, db: Session = Depends(getDb), token: str = Depends(verifyToken)):
-    params = db.query(productParameters).filter(productParameters.name.ilike(f"%{name}%")).all()
+async def get_params_by_name(
+    name: str, db: Session = Depends(get_db), token: str = Depends(verify_token)
+):
+    params = (
+        db.query(ProductParameters)
+        .filter(ProductParameters.name.ilike(f"%{name}%"))
+        .all()
+    )
     if not params:
         raise HTTPException(status_code=404, detail="Parameters not found")
     return [
@@ -44,14 +59,21 @@ async def GetParamsByName(name: str, db: Session = Depends(getDb), token: str = 
             "name": param.name,
             "code": param.code,
             "parentCode": param.parentCode,
-            "parameterTypeId": param.parameterTypeId
+            "parameterTypeId": param.parameterTypeId,
         }
         for param in params
     ]
 
+
 @app.get("/get_parameters_by_parent_code/{parentCode}")
-async def GetParamsByParentCode(parentCode: str, db: Session = Depends(getDb), token: str = Depends(verifyToken)):
-    params = db.query(productParameters).filter(productParameters.parentCode == parentCode).all()
+async def get_params_by_parent_code(
+    parentCode: str, db: Session = Depends(get_db), token: str = Depends(verify_token)
+):
+    params = (
+        db.query(ProductParameters)
+        .filter(ProductParameters.parentCode == parentCode)
+        .all()
+    )
     if not params:
         raise HTTPException(status_code=404, detail="Parameters not found")
     return [
@@ -60,7 +82,7 @@ async def GetParamsByParentCode(parentCode: str, db: Session = Depends(getDb), t
             "name": param.name,
             "code": param.code,
             "parentCode": param.parentCode,
-            "parameterTypeId": param.parameterTypeId
+            "parameterTypeId": param.parameterTypeId,
         }
         for param in params
     ]
