@@ -36,7 +36,7 @@ async def GetParamByCode(code: str, db: Session = Depends(getDb), token: str = D
 @app.get("/get_parameters_by_name")
 async def GetParamsByName(name: str, db: Session = Depends(getDb), token: str = Depends(verifyToken)):
     params = db.query(productParameters).filter(productParameters.name.ilike(f"%{name}%")).all()
-    if params is []:
+    if not params:
         raise HTTPException(status_code=404, detail="Parameters not found")
     return [
         {
@@ -52,7 +52,7 @@ async def GetParamsByName(name: str, db: Session = Depends(getDb), token: str = 
 @app.get("/get_parameters_by_parent_code/{parentCode}")
 async def GetParamsByParentCode(parentCode: str, db: Session = Depends(getDb), token: str = Depends(verifyToken)):
     params = db.query(productParameters).filter(productParameters.parentCode == parentCode).all()
-    if params is None:
+    if not params:
         raise HTTPException(status_code=404, detail="Parameters not found")
     return [
         {
