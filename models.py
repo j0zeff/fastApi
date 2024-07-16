@@ -12,7 +12,7 @@ class ParameterType(Base):
     name = Column(String(50))
 
     productParameters = relationship(
-        "productParameters", back_populates="parameterType"
+        "ProductParameters", back_populates="parameterType"
     )
 
 
@@ -25,7 +25,7 @@ class ProductParameters(Base):
     parentCode = Column(String)
 
     parameterTypeId = Column(Integer, ForeignKey("ParameterType.id"))
-    parameterType = relationship("parameterType", back_populates="productParameters")
+    parameterType = relationship("ParameterType", back_populates="productParameters")
 
 
 class TokenModel(Base):
