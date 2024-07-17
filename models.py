@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import bcrypt
+from pydantic import BaseModel
 from pydantic_sqlalchemy import sqlalchemy_to_pydantic
 
 Base = declarative_base()
@@ -57,3 +58,5 @@ class Users(Base):
     def create_access_token(self):
         alphabet = string.ascii_letters + string.digits
         self.access_token = ''.join(secrets.choice(alphabet) for i in range(20))
+
+#UserModel = sqlalchemy_to_pydantic(Users)

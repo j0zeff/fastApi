@@ -120,7 +120,7 @@ async def log_in():
 
 
 @app.post('/login')
-async def log_in(username: str = Form(), password: str = Form(), db: Session = Depends(get_db)) -> Union[Users, None]:
+async def log_in(username: str = Form(), password: str = Form(), db: Session = Depends(get_db)):
     user = db.query(Users).filter(Users.username == username).first()
     if user and user.check_password(password):
         token = user.create_access_token()
@@ -129,7 +129,7 @@ async def log_in(username: str = Form(), password: str = Form(), db: Session = D
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     
 @app.post('/create_user')
-async def create_user(username: str = Form(), password: str = Form(), db: Session = Depends(get_db)) -> Union[Users, None]:
+async def create_user(username: str = Form(), password: str = Form(), db: Session = Depends(get_db)):
     existingUser = db.query(Users).filter(Users.username == username).first()
     if existingUser:
         raise HTTPException(status_code=400, detail="Username already registered")
