@@ -1,11 +1,17 @@
 from typing import Annotated, Union
-from fastapi import Body, FastAPI, Depends, Form, HTTPException, Header
+from fastapi import Body, FastAPI, Depends, Form, HTTPException, Header, Request
 from sqlalchemy.orm import Session
 from DbContext import SessionLocal
 from models import ProductParameters, TokenModel, Users
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+templates = Jinja2Templates(directory="templates")
 
 def get_db():
     db = SessionLocal()
@@ -92,31 +98,9 @@ async def get_params_by_parent_code(
         for param in params
     ]
 
-@app.get("/login", response_class=HTMLResponse)
-async def log_in():
-    html_content = """
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Product parameters</title>
-        <link rel="stylesheet" href="/styles.css">
-    </head>
-    <body>
-        <div class="login-container">
-            <h1 class="title">Log In</h1>
-            <form action="/login" method="POST">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required><br><br>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required><br><br>
-                <button type="submit">Submit</button>
-            </form>
-        </div>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content, status_code=200)
+@app.get('/login', response_class=HTMLResponse)
+async def log_in(request: Request):
+    return templates.TemplateResponse("LoginView.html", {"request": request})
 
 
 @app.post('/login')
@@ -124,10 +108,15 @@ async def log_in(username: str = Form(), password: str = Form(), db: Session = D
     user = db.query(Users).filter(Users.username == username).first()
     if user and user.check_password(password):
         token = user.create_access_token()
-        return {"access_token": token, "token_type": "bearer"}
+        return {"access_token": user.access_token, "token_type": "bearer"}
     else: 
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     
+
+@app.get('/create_user', response_class=HTMLResponse)
+async def create_user(request: Request):
+    return templates.TemplateResponse("CreateUserView.html", {"request": request})
+
 @app.post('/create_user')
 async def create_user(username: str = Form(), password: str = Form(), db: Session = Depends(get_db)):
     existingUser = db.query(Users).filter(Users.username == username).first()
@@ -136,8 +125,9 @@ async def create_user(username: str = Form(), password: str = Form(), db: Sessio
     
     new_user = Users(username=username)
     new_user.set_password(password)
+    new_user.create_access_token()
     db.add(new_user)
     db.commit()
-    db.refresh()
+    db.refresh(new_user)
 
     return{"message": "User created succsessfuly", "user_id": new_user.id}
