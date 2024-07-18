@@ -1,15 +1,16 @@
 from typing import Annotated, Union
-from fastapi import Body, FastAPI, Depends, Form, HTTPException, Header, Request
+from fastapi import Body, FastAPI, Depends, Form, HTTPException, Header, Request, Query
 from sqlalchemy.orm import Session
 from DbContext import SessionLocal
 from models import ProductParameters, TokenModel, Users
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="C:\\Users\\praktykant2\\Desktop\\praktyka\\static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -31,10 +32,11 @@ async def verify_token(
     if not appCode or not token:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
+
 async def verify_authorization_token(accessToken: str = Header(None), db: Session = Depends(get_db)):
     token = db.query(Users).filter(Users.access_token == accessToken).first()
     if not token:
-        raise HTTPException(status_code=400, detail="Failed authorization")
+        return RedirectResponse(url='/login')
 
 
 @app.get("/get_production_parameter_by_code/{code}")
@@ -108,7 +110,8 @@ async def log_in(username: str = Form(), password: str = Form(), db: Session = D
     user = db.query(Users).filter(Users.username == username).first()
     if user and user.check_password(password):
         token = user.create_access_token()
-        return {"access_token": user.access_token, "token_type": "bearer"}
+        db.commit()
+        return JSONResponse(content={"access_token": user.access_token, "token_type": "bearer"})
     else: 
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     
@@ -125,9 +128,34 @@ async def create_user(username: str = Form(), password: str = Form(), db: Sessio
     
     new_user = Users(username=username)
     new_user.set_password(password)
-    new_user.create_access_token()
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
     return{"message": "User created succsessfuly", "user_id": new_user.id}
+
+@app.get('/get_all_product_params', response_class=HTMLResponse)
+async def get_all_product_params(
+        request: Request, 
+        search: str = Query(None),  
+        skip: int = Query(0, alias='n'), 
+        limit: int = Query(10, alias='m'), 
+        db: Session = Depends(get_db),
+        auth: str = Depends(verify_authorization_token)):
+    paramsCount = db.query(ProductParameters).count()
+    
+    if skip < 0:
+        skip = 0
+    
+    if skip >= paramsCount:
+        skip = max(0, paramsCount - limit)
+
+    if search:
+        params = db.query(ProductParameters).filter(ProductParameters.name.ilike(f"%{search}%")).all()
+        if not params:
+            raise HTTPException(status_code=404, detail="Parameters not found")
+    else:
+        params = db.query(ProductParameters).offset(skip).limit(limit).all()
+    
+    
+    return templates.TemplateResponse("ProductParamsView.html", {"request": request, "params": params, "skip": skip, "limit": limit})

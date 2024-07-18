@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product parameters</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search">
+            <button onclick="searchParams()">Submit</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Parent Code</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for param in params %}
+                <tr>
+                    <td>{{ param.id }}</td>
+                    <td>{{ param.name }}</td>
+                    <td>{{ param.code }}</td>
+                    <td>{{ param.parentCode }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="nav-buttons">
+            <a href="/get_all_product_params?n={{ skip - limit }}&m={{ limit }}">Previous</a>
+            <a href="/get_all_product_params?n={{ skip + limit }}&m={{ limit }}">Next</a>
+        </div>
+    </div>
+    <script>
+        function searchParams(){
+            let searchValue = document.getElementById('searchInput').value;
+            const url = `/get_all_product_params?search=${encodeURIComponent(searchValue)}`;
+            window.location.href = url;
+        }
+
+        async function getAllProductParams(skip, limit, search) {
+            const token = localStorage.getItem('access_token');
+            const url = `/get_all_product_params?n=${skip}&m=${limit}&search=${search}`;
+
+            const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.text();
+            document.body.innerHTML = data;
+        } else {
+            console.error('Failed to fetch product parameters');
+        }
+}
+    </script>
+</body>
+</html>
