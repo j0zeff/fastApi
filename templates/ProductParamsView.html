@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product parameters</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
+
 <body>
     <div class="container">
         <div class="search-container">
@@ -32,36 +34,12 @@
                 {% endfor %}
             </tbody>
         </table>
+        
         <div class="nav-buttons">
-            <a href="/get_all_product_params?n={{ skip - limit }}&m={{ limit }}">Previous</a>
-            <a href="/get_all_product_params?n={{ skip + limit }}&m={{ limit }}">Next</a>
+            <button onclick="previous_btn('{{skip}}', '{{limit}}', '{{search}}')">Previous</button>
+            <button onclick="next_btn('{{skip}}', '{{limit}}', '{{search}}')">Next</button>
         </div>
     </div>
-    <script>
-        function searchParams(){
-            let searchValue = document.getElementById('searchInput').value;
-            const url = `/get_all_product_params?search=${encodeURIComponent(searchValue)}`;
-            window.location.href = url;
-        }
-
-        async function getAllProductParams(skip, limit, search) {
-            const token = localStorage.getItem('access_token');
-            const url = `/get_all_product_params?n=${skip}&m=${limit}&search=${search}`;
-
-            const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.text();
-            document.body.innerHTML = data;
-        } else {
-            console.error('Failed to fetch product parameters');
-        }
-}
-    </script>
+    <script src="/static/js/script.js"></script>
 </body>
 </html>

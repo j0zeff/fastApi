@@ -1,5 +1,5 @@
 from typing import Annotated, Union
-from fastapi import Body, FastAPI, Depends, Form, HTTPException, Header, Request, Query
+from fastapi import Body, FastAPI, Depends, Form, HTTPException, Header, Request, Query, status
 from sqlalchemy.orm import Session
 from DbContext import SessionLocal
 from models import ProductParameters, TokenModel, Users
@@ -33,10 +33,21 @@ async def verify_token(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-async def verify_authorization_token(accessToken: str = Header(None), db: Session = Depends(get_db)):
-    token = db.query(Users).filter(Users.access_token == accessToken).first()
-    if not token:
-        return RedirectResponse(url='/login')
+async def verify_authorization_token(authorization: str = Header(None), db: Session = Depends(get_db)):
+    if authorization is None:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+    
+    token = authorization[len("Bearer "):]
+
+    user = db.query(Users).filter(Users.access_token == token).first()
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Failed authorization")
+    
+    return user
 
 
 @app.get("/get_production_parameter_by_code/{code}")
@@ -142,20 +153,21 @@ async def get_all_product_params(
         limit: int = Query(10, alias='m'), 
         db: Session = Depends(get_db),
         auth: str = Depends(verify_authorization_token)):
-    paramsCount = db.query(ProductParameters).count()
+        print(limit, skip)
+            
+        paramsCount = db.query(ProductParameters).count()
     
-    if skip < 0:
-        skip = 0
+        if skip < 0:
+            skip = 0
     
-    if skip >= paramsCount:
-        skip = max(0, paramsCount - limit)
+        if skip >= paramsCount:
+             skip -= limit
 
-    if search:
-        params = db.query(ProductParameters).filter(ProductParameters.name.ilike(f"%{search}%")).all()
-        if not params:
-            raise HTTPException(status_code=404, detail="Parameters not found")
-    else:
-        params = db.query(ProductParameters).offset(skip).limit(limit).all()
+        if search:
+            params = db.query(ProductParameters).filter(ProductParameters.name.ilike(f"%{search}%")).offset(skip).limit(limit).all()
+            if not params:
+                raise HTTPException(status_code=404, detail="Parameters not found")
+        else:
+            params = db.query(ProductParameters).offset(skip).limit(limit).all()
     
-    
-    return templates.TemplateResponse("ProductParamsView.html", {"request": request, "params": params, "skip": skip, "limit": limit})
+        return templates.TemplateResponse("ProductParamsView.html", {"request": request, "params": params, "skip": skip, "limit": limit, "search": search})
