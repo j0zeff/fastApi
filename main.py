@@ -136,9 +136,10 @@ async def create_user(username: str = Form(), password: str = Form(), db: Sessio
     existingUser = db.query(Users).filter(Users.username == username).first()
     if existingUser:
         raise HTTPException(status_code=400, detail="Username already registered")
-    
+
     new_user = Users(username=username)
     new_user.set_password(password)
+    new_user.create_access_token()
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

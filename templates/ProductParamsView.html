@@ -9,6 +9,10 @@
 </head>
 
 <body>
+    <div class="header">
+        <h1 class="product-params-title">Products parameters</h1>
+        <button id="create-user-btn" onclick="createUser()">Create User</button>
+    </div>
     <div class="container">
         <div class="search-container">
             <input type="text" id="searchInput" class="search">
@@ -34,7 +38,7 @@
                 {% endfor %}
             </tbody>
         </table>
-        
+
         <div class="nav-buttons">
             <button onclick="previous_btn('{{skip}}', '{{limit}}', '{{search}}')">Previous</button>
             <button onclick="next_btn('{{skip}}', '{{limit}}', '{{search}}')">Next</button>
@@ -42,4 +46,5 @@
     </div>
     <script src="/static/js/script.js"></script>
 </body>
+
 </html>
