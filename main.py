@@ -33,15 +33,12 @@ async def verify_token(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-async def verify_authorization_token(authorization: str = Header(None), db: Session = Depends(get_db)):
-    if authorization is None:
-        raise HTTPException(status_code=401, detail="Authorization header missing")
-    
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
-    
+def verify_authorization_token(authorization: str, db: Session = Depends(get_db)):
+    print('verify: ', authorization)  
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+            
     token = authorization[len("Bearer "):]
-
     user = db.query(Users).filter(Users.access_token == token).first()
     
     if not user:
@@ -129,6 +126,12 @@ async def log_in(username: str = Form(), password: str = Form(), db: Session = D
 
 @app.get('/create_user', response_class=HTMLResponse)
 async def create_user(request: Request):
+    
+    sessionId = verify_authorization_token(request.headers.get('authorization'))
+
+    if not sessionId:
+        return templates.TemplateResponse("AccessDeniedView.html", {"request": request})
+    
     return templates.TemplateResponse("CreateUserView.html", {"request": request})
 
 @app.post('/create_user')
@@ -152,10 +155,13 @@ async def get_all_product_params(
         search: str = Query(None),  
         skip: int = Query(0, alias='n'), 
         limit: int = Query(10, alias='m'), 
-        db: Session = Depends(get_db),
-        auth: str = Depends(verify_authorization_token)):
-        print(limit, skip)
-            
+        db: Session = Depends(get_db)):
+        
+        sessionId = verify_authorization_token(request.headers.get('authorization'), db)
+
+        if not sessionId:
+            return templates.TemplateResponse("AccessDeniedView.html", {"request": request})
+        
         paramsCount = db.query(ProductParameters).count()
     
         if skip < 0:
@@ -170,5 +176,5 @@ async def get_all_product_params(
                 raise HTTPException(status_code=404, detail="Parameters not found")
         else:
             params = db.query(ProductParameters).offset(skip).limit(limit).all()
-    
+        
         return templates.TemplateResponse("ProductParamsView.html", {"request": request, "params": params, "skip": skip, "limit": limit, "search": search})
