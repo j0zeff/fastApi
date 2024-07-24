@@ -56,3 +56,4 @@ class Users(Base):
     def create_access_token(self):
         alphabet = string.ascii_letters + string.digits
         self.access_token = ''.join(secrets.choice(alphabet) for i in range(20))
+        return self.access_token

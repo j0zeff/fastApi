@@ -11,13 +11,16 @@
 <body>
     <div class="header">
         <h1 class="product-params-title">Products parameters</h1>
-        <button id="create-user-btn" onclick="createUser()">Create User</button>
+        <form action="/create_user" method="GET" style="display: inline; width: 106.5px; height: 40px; margin:auto 0;">
+            <button id="create-user-btn" type="submit">Create User</button>
+        </form>
     </div>
     <div class="container">
         <div class="search-container">
             <input type="text" id="searchInput" class="search">
             <button onclick="searchParams()">Submit</button>
         </div>
+        {% if params != [] %}
         <table>
             <thead>
                 <tr>
@@ -38,10 +41,13 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <h1 class="not-found">Parameters not found</h1>
+        {%endif%}
 
         <div class="nav-buttons">
             <button onclick="previous_btn('{{skip}}', '{{limit}}', '{{search}}')">Previous</button>
-            <button onclick="next_btn('{{skip}}', '{{limit}}', '{{search}}')">Next</button>
+            <button onclick="next_btn('{{skip}}', '{{limit}}', '{{search}}', '{{ params|length < 10}}')">Next</button>
         </div>
     </div>
     <script src="/static/js/script.js"></script>

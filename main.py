@@ -1,12 +1,11 @@
-from typing import Annotated, Union
-from fastapi import Body, FastAPI, Depends, Form, HTTPException, Header, Request, Query, status
+from fastapi import Body, FastAPI, Depends, Form, HTTPException, Header, Request, Query, Cookie
 from sqlalchemy.orm import Session
 from DbContext import SessionLocal
 from models import ProductParameters, TokenModel, Users
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+import json
 
 app = FastAPI()
 
@@ -21,6 +20,12 @@ def get_db():
     finally:
         db.close()
 
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code == 401:
+        return templates.TemplateResponse("AccessDeniedView.html", {"request": request}, status_code=exc.status_code)
+    return await request.app.default_exception_handler(request, exc)
+
 async def verify_token(
     appCodeClient: str = Header(None),
     tokenClient: str = Header(None),
@@ -33,19 +38,25 @@ async def verify_token(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-def verify_authorization_token(authorization: str, db: Session = Depends(get_db)):
-    print('verify: ', authorization)  
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-            
-    token = authorization[len("Bearer "):]
-    user = db.query(Users).filter(Users.access_token == token).first()
+def verify_authorization_token(access_token: str = Cookie(None), db: Session = Depends(get_db)): 
+    print(access_token)
+    if access_token == None:
+        raise HTTPException(status_code=401, detail="Login failed")
     
+
+    user = db.query(Users).filter(Users.access_token == access_token).first()
+
+    print('user: ', user)
+    print('auth: ', access_token)
     if not user:
-        raise HTTPException(status_code=401, detail="Failed authorization")
+        raise HTTPException(status_code=401, detail="Login failed")
     
     return user
 
+
+@app.get("/", response_class=RedirectResponse)
+async def root():
+    return RedirectResponse(url="/login")
 
 @app.get("/get_production_parameter_by_code/{code}")
 async def get_param_by_code(
@@ -109,8 +120,18 @@ async def get_params_by_parent_code(
     ]
 
 @app.get('/login', response_class=HTMLResponse)
-async def log_in(request: Request):
-    return templates.TemplateResponse("LoginView.html", {"request": request})
+async def log_in(request: Request, access_token: str = Cookie(None), db: Session = Depends(get_db)):
+    params = db.query(ProductParameters).offset(0).limit(10).all()
+
+    if access_token == None:
+        return templates.TemplateResponse("LoginView.html", {"request": request})
+    
+    user = db.query(Users).filter(Users.access_token == access_token).first()
+
+    if not user:
+        return templates.TemplateResponse("LoginView.html", {"request": request})
+    
+    return RedirectResponse(url='/get_all_product_params')
 
 
 @app.post('/login')
@@ -119,26 +140,29 @@ async def log_in(username: str = Form(), password: str = Form(), db: Session = D
     if user and user.check_password(password):
         token = user.create_access_token()
         db.commit()
-        return JSONResponse(content={"access_token": user.access_token, "token_type": "bearer"})
+        response = JSONResponse(content={"message": "Login successful"})
+        response.set_cookie(key="access_token", value=token, httponly=True, secure=True)
+        return response
     else: 
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     
 
 @app.get('/create_user', response_class=HTMLResponse)
-async def create_user(request: Request):
-    
-    sessionId = verify_authorization_token(request.headers.get('authorization'))
+async def create_user(request: Request, access_token: str = Cookie(None)):
 
-    if not sessionId:
+    if not access_token:
         return templates.TemplateResponse("AccessDeniedView.html", {"request": request})
     
     return templates.TemplateResponse("CreateUserView.html", {"request": request})
 
 @app.post('/create_user')
-async def create_user(username: str = Form(), password: str = Form(), db: Session = Depends(get_db)):
+async def create_user(username: str = Form(), password: str = Form(), db: Session = Depends(get_db), request: Request = None):
     existingUser = db.query(Users).filter(Users.username == username).first()
     if existingUser:
-        raise HTTPException(status_code=400, detail="Username already registered")
+        return templates.TemplateResponse(
+            "CreateUserView.html",
+            {"request": request, "error": "Username already registered"}
+        )
 
     new_user = Users(username=username)
     new_user.set_password(password)
@@ -147,7 +171,10 @@ async def create_user(username: str = Form(), password: str = Form(), db: Sessio
     db.commit()
     db.refresh(new_user)
 
-    return{"message": "User created succsessfuly", "user_id": new_user.id}
+    return templates.TemplateResponse(
+            "CreateUserView.html",
+            {"request": request, "success": "User created successfully"}
+        )
 
 @app.get('/get_all_product_params', response_class=HTMLResponse)
 async def get_all_product_params(
@@ -155,12 +182,10 @@ async def get_all_product_params(
         search: str = Query(None),  
         skip: int = Query(0, alias='n'), 
         limit: int = Query(10, alias='m'), 
-        db: Session = Depends(get_db)):
+        db: Session = Depends(get_db),
+        user: Users = Depends(verify_authorization_token)):
         
-        sessionId = verify_authorization_token(request.headers.get('authorization'), db)
-
-        if not sessionId:
-            return templates.TemplateResponse("AccessDeniedView.html", {"request": request})
+        print(request.cookies)
         
         paramsCount = db.query(ProductParameters).count()
     
@@ -172,8 +197,6 @@ async def get_all_product_params(
 
         if search:
             params = db.query(ProductParameters).filter(ProductParameters.name.ilike(f"%{search}%")).offset(skip).limit(limit).all()
-            if not params:
-                raise HTTPException(status_code=404, detail="Parameters not found")
         else:
             params = db.query(ProductParameters).offset(skip).limit(limit).all()
         

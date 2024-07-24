@@ -9,7 +9,14 @@
 </head>
 
 <body>
-    <div class="form-container">
+    {% if success %}
+    <div class="notification success">{{ success }}</div>
+    {% endif %}
+
+    {% if error %}
+    <div class="notification error">{{ error }}</div>
+    {% endif %}
+    <div class="form-container" id="create-user-form">
         <h1 class="title">Create <span class="title-in">User</span></h1>
         <form action="/create_user" method="POST">
             <div class="username-field">
