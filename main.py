@@ -11,7 +11,14 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 from DbContext import SessionLocal
-from models import ProductParameters, TokenModel, Users
+from models import (
+    ProductParameters,
+    TokenModel,
+    Users,
+    UserBase,
+    UserDelete,
+    UserCreate,
+)
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -92,7 +99,7 @@ async def get_param_by_code(
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    return RedirectResponse(url="/login")
+    return RedirectResponse(url="/menu")
 
 
 @app.get("/get_parameters_by_name")
@@ -141,21 +148,97 @@ async def get_params_by_parent_code(
     ]
 
 
+@app.get("/menu", response_class=HTMLResponse)
+async def show_menu(
+    request: Request, auth: Users = Depends(verify_authorization_token)
+):
+    return templates.TemplateResponse("MenuView.html", {"request": request})
+
+
+@app.get("/get_users", response_class=HTMLResponse)
+async def get_users(
+    request: Request,
+    search: str = Query(None),
+    skip: int = Query(0, alias="n"),
+    limit: int = Query(8, alias="m"),
+    db: Session = Depends(get_db),
+    auth: Users = Depends(verify_authorization_token),
+):
+    usersCount = db.query(Users).filter(Users.isDeleted == False).count()
+
+    if skip < 0:
+        skip = 0
+
+    if skip >= usersCount:
+        skip -= limit
+
+    if search:
+        users = (
+            db.query(Users)
+            .filter(Users.username.ilike(f"%{search}%"))
+            .filter(Users.isDeleted == False)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+    else:
+        users = (
+            db.query(Users)
+            .filter(Users.isDeleted == False)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    return templates.TemplateResponse(
+        "UsersView.html",
+        {
+            "request": request,
+            "users": users,
+            "skip": skip,
+            "limit": limit,
+            "search": search,
+        },
+    )
+
+
+@app.post("/delete_user")
+async def delete_user(
+    request: Request,
+    user: UserDelete = Body(),
+    db: Session = Depends(get_db),
+    auth: Users = Depends(verify_authorization_token),
+):
+    userToDelete = db.query(Users).filter(Users.id == user.user_id).first()
+
+    if not userToDelete:
+        raise HTTPException(404, detail="No such user")
+
+    userToDelete.delete_user()
+    db.commit()
+    return
+    # return templates.TemplateResponse("UsersView.html", {"request": request})
+    # return RedirectResponse(url="/get_users")
+
+
 @app.get("/login", response_class=HTMLResponse)
 async def log_in(
     request: Request, access_token: str = Cookie(None), db: Session = Depends(get_db)
 ):
-    params = db.query(ProductParameters).offset(0).limit(10).all()
-
     if access_token == None:
         return templates.TemplateResponse("LoginView.html", {"request": request})
 
-    user = db.query(Users).filter(Users.access_token == access_token).first()
+    user = (
+        db.query(Users)
+        .filter(Users.access_token == access_token)
+        .filter(Users.isDeleted == False)
+        .first()
+    )
 
     if not user:
         return templates.TemplateResponse("LoginView.html", {"request": request})
 
-    return RedirectResponse(url="/get_all_product_params")
+    return RedirectResponse(url="/menu")
 
 
 @app.post("/login")
@@ -165,7 +248,12 @@ async def log_in(
     db: Session = Depends(get_db),
     request: Request = None,
 ):
-    user = db.query(Users).filter(Users.username == username).first()
+    user = (
+        db.query(Users)
+        .filter(Users.username == username)
+        .filter(Users.isDeleted == False)
+        .first()
+    )
     if user and user.check_password(password):
         token = user.create_access_token()
         db.commit()
@@ -180,9 +268,11 @@ async def log_in(
 
 
 @app.get("/create_user", response_class=HTMLResponse)
-async def create_user(request: Request, access_token: str = Cookie(None)):
+async def create_user(
+    request: Request, auth: Users = Depends(verify_authorization_token)
+):
 
-    if not access_token:
+    if not auth:
         return templates.TemplateResponse("AccessDeniedView.html", {"request": request})
 
     return templates.TemplateResponse("CreateUserView.html", {"request": request})

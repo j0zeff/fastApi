@@ -1,9 +1,31 @@
 import secrets
 import string
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import bcrypt
+from pydantic import BaseModel
+
+
+class UserBase(BaseModel):
+    username: str
+
+
+class UserCreate(UserBase):
+    password: str
+
+
+class UserDelete(BaseModel):
+    user_id: int
+
+
+class UserResponse(UserBase):
+    id: int
+    isDeleted: bool
+
+    class Config:
+        orm_mode = True
+
 
 Base = declarative_base()
 
@@ -46,6 +68,7 @@ class Users(Base):
     username = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
     access_token = Column(String, nullable=False)
+    isDeleted = Column(Boolean, server_default=text("0"), nullable=False)
 
     def set_password(self, password: str):
         self.password_hash = bcrypt.hashpw(
@@ -61,3 +84,11 @@ class Users(Base):
         alphabet = string.ascii_letters + string.digits
         self.access_token = "".join(secrets.choice(alphabet) for i in range(20))
         return self.access_token
+
+    def delete_user(self):
+        self.isDeleted = True
+        return self
+
+    def recover_user(self):
+        self.isDeleted = True
+        return self

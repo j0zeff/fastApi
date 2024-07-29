@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product parameters</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+    <div class="header">
+        <h1 class="product-params-title">Users</h1>
+        <form action="/create_user" method="GET" style="display: inline; width: 106.5px; height: 40px; margin:auto 0;">
+            <button id="create-user-btn" type="submit">Create User</button>
+        </form>
+    </div>
+    <div class="container">
+        <div class="search-container">
+            <input type="text" id="searchUserInput" class="search">
+            <button onclick="searchUsers()">Submit</button>
+        </div>
+        {% if users != [] %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>
+                        <button type="button" style="background-color: red;" onclick="delete_user('{{ user.id }}')">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <h1 class="not-found">Users not found</h1>
+        {%endif%}
+
+        <div class="nav-buttons">
+            <button onclick="previous_users_btn('{{skip}}', '{{limit}}', '{{search}}')">Previous</button>
+            <button onclick="next_users_btn('{{skip}}', '{{limit}}', '{{search}}', '{{ users|length < 10}}')">Next</button>
+        </div>
+    </div>
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
