@@ -1,23 +1,39 @@
-document.getElementById('loginForm').addEventListener('submit', async function (event) {
-    event.preventDefault();
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
 
-    const formData = new FormData(event.target);
-    const data = new URLSearchParams(formData);
+            const formData = new FormData(event.target);
+            const data = new URLSearchParams(formData);
 
-    const response = await fetch('/login', {
-        method: 'POST',
-        body: data,
-        credentials: 'include'
-    });
+            const response = await fetch('/login', {
+                method: 'POST',
+                body: data,
+                credentials: 'include'
+            });
 
-    if (response.ok) {
-        console.log('response.ok');
-        window.location.href = '/get_all_product_params';
+            if (response.ok) {
+                window.location.href = '/get_all_product_params';
+            } else {
+                console.log('Login failed');
+            }
+        });
     } else {
-        console.log('error');
+        console.error('Login form not found');
     }
-});
 
+    const links = document.querySelectorAll('.buttons .link');
+    const currentPath = window.location.pathname;
+
+    links.forEach(link => {
+        const linkPath = new URL(link.href).pathname;
+        link.classList.remove('active');
+        if (linkPath === currentPath) {
+            link.classList.add('active');
+        }
+    });
+});
 function searchParams() {
     let searchValue = document.getElementById('searchInput').value;
     const search = encodeURIComponent(searchValue);
@@ -92,7 +108,7 @@ async function next_btn(skip, limit, search, isLast) {
     skip = Number(skip);
     limit = Number(limit);
     console.log('next_btn');
-    if (isLast === true){
+    if (isLast === true) {
         console.log('isLast: ' + skip);
         getAllProductParams(skip, limit, search);
     }
@@ -114,7 +130,7 @@ async function next_users_btn(skip, limit, search, isLast) {
     skip = Number(skip);
     limit = Number(limit);
     console.log('next_btn');
-    if (isLast === true){
+    if (isLast === true) {
         console.log('isLast: ' + skip);
         getAllUsers(skip, limit, search);
     }
@@ -129,12 +145,12 @@ async function next_users_btn(skip, limit, search, isLast) {
 async function createUser() {
     const response = await fetch('/create_user', {
         method: 'GET',
-        credentials: 'include' 
+        credentials: 'include'
     });
     if (response.redirected) {
         window.location.href = response.url;
     }
-    else if(response.ok) {
+    else if (response.ok) {
         const data = await response.text();
         document.body.innerHTML = data;
     } else {
@@ -142,7 +158,7 @@ async function createUser() {
     }
 }
 
-function login(){
+function login() {
     window.location.href = '/login';
 }
 
@@ -158,7 +174,7 @@ async function delete_user(userId) {
         body: JSON.stringify({ user_id: userId }),
     });
 
-    if(response.ok) {
+    if (response.ok) {
         window.location.href = '/get_users';
     }
 }
@@ -174,17 +190,17 @@ async function delete_product_param(paramId) {
         body: JSON.stringify({ param_id: paramId }),
     });
 
-    if(response.ok) {
+    if (response.ok) {
         window.location.href = '/get_all_product_params';
     }
 }
 
 
-async function productParamsBtn(){
+async function productParamsBtn() {
     window.location.href = '/get_all_product_params';
 }
 
-async function usersBtn(){
+async function usersBtn() {
     window.location.href = '/get_users';
 }
 
