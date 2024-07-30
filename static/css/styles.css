@@ -194,12 +194,12 @@ th {
 }
 
 .buttons a:hover{
-    background-color: rgb(236, 173, 15);
+    background-color: #ff5722;
     color: #fff;
 }
 
 .buttons a.active {
-    background-color: rgb(236, 173, 15);
+    background-color: #ff5722;
     color: #fff;
 }
 

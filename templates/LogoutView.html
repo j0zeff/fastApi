@@ -1,0 +1,10 @@
+{% extends "Base.html" %}
+
+{% block content %}
+<div class="product-container">
+    <h1 class="access-denied">Are you sure?</h1>
+    <form action="/logout" method="POST">
+        <button type="submit" class="login-btn" style="width: 100px; align-self: center;">CONFIRM</button>
+    </form>
+</div>
+{% endblock %}

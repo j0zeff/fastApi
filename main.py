@@ -362,3 +362,19 @@ async def get_all_product_params(
             "search": search,
         },
     )
+
+@app.get('/logout', response_class=HTMLResponse)
+async def logout( 
+        request: Request = None, 
+        user: Users = Depends(verify_authorization_token)
+    ):
+    return templates.TemplateResponse('LogoutView.html', {'request': request})
+
+@app.post('/logout')
+async def logout( 
+        db: Session = Depends(get_db), 
+        user: Users = Depends(verify_authorization_token)
+    ):
+    user.access_token = ''
+    db.commit()
+    return RedirectResponse(url='/login', status_code=303)
