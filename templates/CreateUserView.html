@@ -1,14 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "Base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product parameters</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-
-<body>
+{% block content %}
+<div class="product-container">
     {% if success %}
     <div class="notification success">{{ success }}</div>
     {% endif %}
@@ -30,6 +23,5 @@
             <button type="submit">Submit</button>
         </form>
     </div>
-    <script src="/static/js/script.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}

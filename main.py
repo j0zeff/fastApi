@@ -18,6 +18,7 @@ from models import (
     UserBase,
     UserDelete,
     UserCreate,
+    ParamDelete
 )
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -26,11 +27,7 @@ import json
 
 app = FastAPI()
 
-app.mount(
-    "/static",
-    StaticFiles(directory="C:\\Users\\praktykant2\\Desktop\\praktyka\\static"),
-    name="static",
-)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -99,7 +96,7 @@ async def get_param_by_code(
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    return RedirectResponse(url="/menu")
+    return RedirectResponse(url="/login")
 
 
 @app.get("/get_parameters_by_name")
@@ -160,7 +157,7 @@ async def get_users(
     request: Request,
     search: str = Query(None),
     skip: int = Query(0, alias="n"),
-    limit: int = Query(8, alias="m"),
+    limit: int = Query(6, alias="m"),
     db: Session = Depends(get_db),
     auth: Users = Depends(verify_authorization_token),
 ):
@@ -221,6 +218,24 @@ async def delete_user(
     # return RedirectResponse(url="/get_users")
 
 
+@app.post("/delete_product_param")
+async def delete_product_param(
+    request: Request,
+    param: ParamDelete = Body(),
+    db: Session = Depends(get_db),
+    auth: Users = Depends(verify_authorization_token),
+):
+    paramToDelete = db.query(ProductParameters).filter(ProductParameters.id == param.param_id).first()
+
+    if not paramToDelete:
+        raise HTTPException(404, detail="No such user")
+
+    paramToDelete.delete_param()
+    db.commit()
+    return
+
+
+
 @app.get("/login", response_class=HTMLResponse)
 async def log_in(
     request: Request, access_token: str = Cookie(None), db: Session = Depends(get_db)
@@ -238,7 +253,7 @@ async def log_in(
     if not user:
         return templates.TemplateResponse("LoginView.html", {"request": request})
 
-    return RedirectResponse(url="/menu")
+    return RedirectResponse(url="/get_all_product_params")
 
 
 @app.post("/login")
@@ -310,14 +325,14 @@ async def get_all_product_params(
     request: Request,
     search: str = Query(None),
     skip: int = Query(0, alias="n"),
-    limit: int = Query(10, alias="m"),
+    limit: int = Query(6, alias="m"),
     db: Session = Depends(get_db),
     user: Users = Depends(verify_authorization_token),
 ):
 
     print(request.cookies)
 
-    paramsCount = db.query(ProductParameters).count()
+    paramsCount = db.query(ProductParameters).filter(ProductParameters.isDeleted == False).count()
 
     if skip < 0:
         skip = 0
@@ -329,12 +344,13 @@ async def get_all_product_params(
         params = (
             db.query(ProductParameters)
             .filter(ProductParameters.name.ilike(f"%{search}%"))
+            .filter(ProductParameters.isDeleted == False)
             .offset(skip)
             .limit(limit)
             .all()
         )
     else:
-        params = db.query(ProductParameters).offset(skip).limit(limit).all()
+        params = db.query(ProductParameters).filter(ProductParameters.isDeleted == False).offset(skip).limit(limit).all()
 
     return templates.TemplateResponse(
         "ProductParamsView.html",

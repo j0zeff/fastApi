@@ -10,30 +10,25 @@ document.getElementById('loginForm').addEventListener('submit', async function (
         credentials: 'include'
     });
 
-    const result = await response.json();
-
     if (response.ok) {
-        console.log('response.ok')
-        window.location.href = '/menu';
+        console.log('response.ok');
+        window.location.href = '/get_all_product_params';
     } else {
-        const notification = document.getElementById('notification');
-        notification.style.display = 'block';
-        notification.textContent = message;
-        notification.className = 'notification error';
+        console.log('error');
     }
 });
 
 function searchParams() {
     let searchValue = document.getElementById('searchInput').value;
     const search = encodeURIComponent(searchValue);
-    getAllProductParams(0, 8, search);
+    getAllProductParams(0, 6, search);
 }
 
 function searchUsers() {
     let searchValue = document.getElementById('searchUserInput').value;
     const search = encodeURIComponent(searchValue);
     console.log(searchValue);
-    getAllUsers(0, 8, search);
+    getAllUsers(0, 6, search);
 }
 
 
@@ -166,8 +161,24 @@ async function delete_user(userId) {
     if(response.ok) {
         window.location.href = '/get_users';
     }
-
 }
+
+async function delete_product_param(paramId) {
+    console.log(paramId);
+    const response = await fetch('/delete_product_param', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ param_id: paramId }),
+    });
+
+    if(response.ok) {
+        window.location.href = '/get_all_product_params';
+    }
+}
+
 
 async function productParamsBtn(){
     window.location.href = '/get_all_product_params';
@@ -176,3 +187,4 @@ async function productParamsBtn(){
 async function usersBtn(){
     window.location.href = '/get_users';
 }
+

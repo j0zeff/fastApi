@@ -1,14 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "Base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product parameters</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-
-<body>
+{% block content %}
+<div class="product-container">
     <div class="header">
         <h1 class="product-params-title">Users</h1>
         <form action="/create_user" method="GET" style="display: inline; width: 106.5px; height: 40px; margin:auto 0;">
@@ -50,6 +43,5 @@
             <button onclick="next_users_btn('{{skip}}', '{{limit}}', '{{search}}', '{{ users|length < 10}}')">Next</button>
         </div>
     </div>
-    <script src="/static/js/script.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}

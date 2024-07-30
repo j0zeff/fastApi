@@ -7,6 +7,9 @@ import bcrypt
 from pydantic import BaseModel
 
 
+class ParamDelete(BaseModel):
+    param_id: int
+
 class UserBase(BaseModel):
     username: str
 
@@ -48,9 +51,14 @@ class ProductParameters(Base):
     name = Column(String(50))
     code = Column(String, unique=True)
     parentCode = Column(String)
+    isDeleted = Column(Boolean, server_default=text("FALSE"), nullable=False)
 
     parameterTypeId = Column(Integer, ForeignKey("ParameterType.id"))
     parameterType = relationship("ParameterType", back_populates="productParameters")
+
+    def delete_param(self):
+        self.isDeleted = True
+        return self
 
 
 class TokenModel(Base):
@@ -68,7 +76,7 @@ class Users(Base):
     username = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
     access_token = Column(String, nullable=False)
-    isDeleted = Column(Boolean, server_default=text("0"), nullable=False)
+    isDeleted = Column(Boolean, server_default=text("FALSE"), nullable=False)
 
     def set_password(self, password: str):
         self.password_hash = bcrypt.hashpw(

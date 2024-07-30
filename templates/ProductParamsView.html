@@ -1,14 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "Base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product parameters</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-
-<body>
+{% block content %}
+<div class="product-container">
     <div class="header">
         <h1 class="product-params-title">Products parameters</h1>
     </div>
@@ -25,6 +18,7 @@
                     <th>Name</th>
                     <th>Code</th>
                     <th>Parent Code</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -34,6 +28,9 @@
                     <td>{{ param.name }}</td>
                     <td>{{ param.code }}</td>
                     <td>{{ param.parentCode }}</td>
+                    <td>
+                        <button type="button" style="background-color: red;" onclick="delete_product_param('{{ param.id }}')">Delete</button>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -47,6 +44,5 @@
             <button onclick="next_btn('{{skip}}', '{{limit}}', '{{search}}', '{{ params|length < 10}}')">Next</button>
         </div>
     </div>
-    <script src="/static/js/script.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}
