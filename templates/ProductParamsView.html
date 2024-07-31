@@ -1,0 +1,48 @@
+{% extends "Base.html" %}
+
+{% block content %}
+<div class="product-container">
+    <div class="header">
+        <h1 class="product-params-title">Products parameters</h1>
+    </div>
+    <div class="container">
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search">
+            <button onclick="searchParams()">Submit</button>
+        </div>
+        {% if params != [] %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Parent Code</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for param in params %}
+                <tr>
+                    <td>{{ param.id }}</td>
+                    <td>{{ param.name }}</td>
+                    <td>{{ param.code }}</td>
+                    <td>{{ param.parentCode }}</td>
+                    <td>
+                        <button type="button" style="background-color: red;" onclick="delete_product_param('{{ param.id }}')">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <h1 class="not-found">Parameters not found</h1>
+        {%endif%}
+
+        <div class="nav-buttons">
+            <button onclick="previous_btn('{{skip}}', '{{limit}}', '{{search}}')">Previous</button>
+            <button onclick="next_btn('{{skip}}', '{{limit}}', '{{search}}', '{{ params|length < 10}}')">Next</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,8 +1,8 @@
-"""fixed format of naming
+"""Added isDeleted column to Users table
 
-Revision ID: d72e2bc957b0
-Revises: a034cdf2e676
-Create Date: 2024-07-16 12:52:51.851787
+Revision ID: d1dab86ff6bb
+Revises: 786a6591bb78
+Create Date: 2024-07-25 11:31:05.079163
 
 """
 
@@ -13,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "d72e2bc957b0"
-down_revision: Union[str, None] = "a034cdf2e676"
+revision: str = "d1dab86ff6bb"
+down_revision: Union[str, None] = "786a6591bb78"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
