@@ -10,6 +10,7 @@ from pydantic import BaseModel
 class ParamDelete(BaseModel):
     param_id: int
 
+
 class UserBase(BaseModel):
     username: str
 
@@ -39,9 +40,7 @@ class ParameterType(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50))
 
-    productParameters = relationship(
-        "ProductParameters", back_populates="parameterType"
-    )
+    productParameters = relationship("ProductParameters", back_populates="parameterType")
 
 
 class ProductParameters(Base):
@@ -79,14 +78,10 @@ class Users(Base):
     isDeleted = Column(Boolean, server_default=text("FALSE"), nullable=False)
 
     def set_password(self, password: str):
-        self.password_hash = bcrypt.hashpw(
-            password.encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
+        self.password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
     def check_password(self, password: str):
-        return bcrypt.checkpw(
-            password.encode("utf-8"), self.password_hash.encode("utf-8")
-        )
+        return bcrypt.checkpw(password.encode("utf-8"), self.password_hash.encode("utf-8"))
 
     def create_access_token(self):
         alphabet = string.ascii_letters + string.digits

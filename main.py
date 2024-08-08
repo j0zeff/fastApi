@@ -11,15 +11,7 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 from DbContext import SessionLocal
-from models import (
-    ProductParameters,
-    TokenModel,
-    Users,
-    UserBase,
-    UserDelete,
-    UserCreate,
-    ParamDelete
-)
+from models import ProductParameters, TokenModel, Users, UserBase, UserDelete, UserCreate, ParamDelete
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -43,9 +35,7 @@ def get_db():
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
     if exc.status_code == 401:
-        return templates.TemplateResponse(
-            "AccessDeniedView.html", {"request": request}, status_code=exc.status_code
-        )
+        return templates.TemplateResponse("AccessDeniedView.html", {"request": request}, status_code=exc.status_code)
     return await request.app.default_exception_handler(request, exc)
 
 
@@ -61,9 +51,7 @@ async def verify_token(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-def verify_authorization_token(
-    access_token: str = Cookie(None), db: Session = Depends(get_db)
-):
+def verify_authorization_token(access_token: str = Cookie(None), db: Session = Depends(get_db)):
     print(access_token)
     if access_token == None:
         raise HTTPException(status_code=401, detail="Login failed")
@@ -79,9 +67,7 @@ def verify_authorization_token(
 
 
 @app.get("/get_production_parameter_by_code/{code}")
-async def get_param_by_code(
-    code: str, db: Session = Depends(get_db), token: str = Depends(verify_token)
-):
+async def get_param_by_code(code: str, db: Session = Depends(get_db), token: str = Depends(verify_token)):
     param = db.query(ProductParameters).filter(ProductParameters.code == code).first()
     if param is None:
         raise HTTPException(status_code=404, detail="Parameter not found")
@@ -100,14 +86,8 @@ async def root():
 
 
 @app.get("/get_parameters_by_name")
-async def get_params_by_name(
-    name: str, db: Session = Depends(get_db), token: str = Depends(verify_token)
-):
-    params = (
-        db.query(ProductParameters)
-        .filter(ProductParameters.name.ilike(f"%{name}%"))
-        .all()
-    )
+async def get_params_by_name(name: str, db: Session = Depends(get_db), token: str = Depends(verify_token)):
+    params = db.query(ProductParameters).filter(ProductParameters.name.ilike(f"%{name}%")).all()
     if not params:
         raise HTTPException(status_code=404, detail="Parameters not found")
     return [
@@ -123,14 +103,8 @@ async def get_params_by_name(
 
 
 @app.get("/get_parameters_by_parent_code/{parentCode}")
-async def get_params_by_parent_code(
-    parentCode: str, db: Session = Depends(get_db), token: str = Depends(verify_token)
-):
-    params = (
-        db.query(ProductParameters)
-        .filter(ProductParameters.parentCode == parentCode)
-        .all()
-    )
+async def get_params_by_parent_code(parentCode: str, db: Session = Depends(get_db), token: str = Depends(verify_token)):
+    params = db.query(ProductParameters).filter(ProductParameters.parentCode == parentCode).all()
     if not params:
         raise HTTPException(status_code=404, detail="Parameters not found")
     return [
@@ -146,9 +120,7 @@ async def get_params_by_parent_code(
 
 
 @app.get("/menu", response_class=HTMLResponse)
-async def show_menu(
-    request: Request, auth: Users = Depends(verify_authorization_token)
-):
+async def show_menu(request: Request, auth: Users = Depends(verify_authorization_token)):
     return templates.TemplateResponse("MenuView.html", {"request": request})
 
 
@@ -179,13 +151,7 @@ async def get_users(
             .all()
         )
     else:
-        users = (
-            db.query(Users)
-            .filter(Users.isDeleted == False)
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        users = db.query(Users).filter(Users.isDeleted == False).offset(skip).limit(limit).all()
 
     return templates.TemplateResponse(
         "UsersView.html",
@@ -235,20 +201,12 @@ async def delete_product_param(
     return
 
 
-
 @app.get("/login", response_class=HTMLResponse)
-async def log_in(
-    request: Request, access_token: str = Cookie(None), db: Session = Depends(get_db)
-):
+async def log_in(request: Request, access_token: str = Cookie(None), db: Session = Depends(get_db)):
     if access_token == None:
         return templates.TemplateResponse("LoginView.html", {"request": request})
 
-    user = (
-        db.query(Users)
-        .filter(Users.access_token == access_token)
-        .filter(Users.isDeleted == False)
-        .first()
-    )
+    user = db.query(Users).filter(Users.access_token == access_token).filter(Users.isDeleted == False).first()
 
     if not user:
         return templates.TemplateResponse("LoginView.html", {"request": request})
@@ -263,12 +221,7 @@ async def log_in(
     db: Session = Depends(get_db),
     request: Request = None,
 ):
-    user = (
-        db.query(Users)
-        .filter(Users.username == username)
-        .filter(Users.isDeleted == False)
-        .first()
-    )
+    user = db.query(Users).filter(Users.username == username).filter(Users.isDeleted == False).first()
     if user and user.check_password(password):
         token = user.create_access_token()
         db.commit()
@@ -283,9 +236,7 @@ async def log_in(
 
 
 @app.get("/create_user", response_class=HTMLResponse)
-async def create_user(
-    request: Request, auth: Users = Depends(verify_authorization_token)
-):
+async def create_user(request: Request, auth: Users = Depends(verify_authorization_token)):
 
     if not auth:
         return templates.TemplateResponse("AccessDeniedView.html", {"request": request})
@@ -310,6 +261,7 @@ async def create_user(
     new_user = Users(username=username)
     new_user.set_password(password)
     new_user.create_access_token()
+    new_user.isDeleted = False
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -350,7 +302,9 @@ async def get_all_product_params(
             .all()
         )
     else:
-        params = db.query(ProductParameters).filter(ProductParameters.isDeleted == False).offset(skip).limit(limit).all()
+        params = (
+            db.query(ProductParameters).filter(ProductParameters.isDeleted == False).offset(skip).limit(limit).all()
+        )
 
     return templates.TemplateResponse(
         "ProductParamsView.html",
@@ -363,18 +317,14 @@ async def get_all_product_params(
         },
     )
 
-@app.get('/logout', response_class=HTMLResponse)
-async def logout( 
-        request: Request = None, 
-        user: Users = Depends(verify_authorization_token)
-    ):
-    return templates.TemplateResponse('LogoutView.html', {'request': request})
 
-@app.post('/logout')
-async def logout( 
-        db: Session = Depends(get_db), 
-        user: Users = Depends(verify_authorization_token)
-    ):
-    user.access_token = ''
+@app.get("/logout", response_class=HTMLResponse)
+async def logout(request: Request = None, user: Users = Depends(verify_authorization_token)):
+    return templates.TemplateResponse("LogoutView.html", {"request": request})
+
+
+@app.post("/logout")
+async def logout(db: Session = Depends(get_db), user: Users = Depends(verify_authorization_token)):
+    user.access_token = ""
     db.commit()
-    return RedirectResponse(url='/login', status_code=303)
+    return RedirectResponse(url="/login", status_code=303)
